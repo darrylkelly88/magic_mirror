@@ -1,0 +1,8 @@
+---
+# vars file for createmm
+mm_dirs:
+  - /etc/magicmirror/dockerconfig/config
+  - /etc/magicmirror/dockerconfig/modules
+  - /etc/magicmirror/dockerconfig/css
+
+mm_UID: 1500

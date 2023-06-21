@@ -1,0 +1,44 @@
+---
+# tasks file for createmm
+
+- name: debug task
+  ansible.builtin.debug:
+    msg: "{{mm_dirs}}"
+
+- name: create the magic_mirror user with a UID of {{mm_UID}}
+  ansible.builtin.user:
+    name: magic_mirror
+    uid: "{{ mm_UID }}"
+    system: true
+    createhome: false
+    state: present
+
+- name: create directories {{mm_dirs}}
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: directory
+    owner: magic_mirror
+    group: magic_mirror
+    mode: 0644
+  loop: "{{mm_dirs}}"
+
+- name: set the selinux contexts of mm_dirs to container_file_t
+  community.general.sefcontext:
+    target: "{{ item }}"
+    setype: container_file_t
+    state: present
+  loop: "{{mm_dirs}}"
+
+- name: run restorecon against mm_dirs
+  ansible.builtin.command: restorecon -R -v "{{ item }}"
+  loop: "{{mm_dirs}}"
+
+- name: open port 80
+  ansible.posix.firewalld:
+    port: 80/tcp
+    permanent: true
+    state: enabled
+
+- name: 
+
+#- name: use podman to deploy the container
