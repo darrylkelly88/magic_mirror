@@ -39,6 +39,19 @@
     permanent: true
     state: enabled
 
-- name: 
+- name: deploy the karsten13/magicmirror container as the magic_mirror user using podman
+  containers.podman.podman_container:
+    name: magicmirror
+    image: hub.docker.com/karsten13/magicmirror:latest
+    state: started
+    publish:
+      - 80:8080/tcp
+    volume:
+      - "{{ mm_dirs }}/hub-linux-image:/hub/target:{{ mm_dir }}"
+  register: result
+  retries: 3
+  delay: 1
+  until: result is not failed
+
 
 #- name: use podman to deploy the container
