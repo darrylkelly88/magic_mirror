@@ -6,3 +6,8 @@ mm_dirs:
   - /etc/magicmirror/dockerconfig/css
 
 mm_UID: 1500
+
+mm_container_dirs:
+  - /opt/magicmirror/config
+  - /opt/magicmirror/modules
+  - /opt/magicmirror/css

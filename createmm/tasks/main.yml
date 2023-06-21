@@ -3,7 +3,7 @@
 
 - name: debug task
   ansible.builtin.debug:
-    msg: "{{mm_dirs}}"
+    msg: "{{mm_dirs}}:{{mm_container_dirs}}:Z"
 
 - name: create the magic_mirror user with a UID of {{mm_UID}}
   ansible.builtin.user:
@@ -39,15 +39,15 @@
     permanent: true
     state: enabled
 
-- name: deploy the karsten13/magicmirror container as the magic_mirror user using podman
+- name: deploy the karsten13/magicmirror container  using podman
   containers.podman.podman_container:
     name: magicmirror
-    image: hub.docker.com/karsten13/magicmirror:latest
+    image: karsten13/magicmirror:latest
     state: started
     publish:
       - 80:8080/tcp
     volume:
-      - "{{ mm_dirs }}/hub-linux-image:/hub/target:{{ mm_dir }}"
+      - "{{ mm_dirs }}:{{ mm_container_dirs }}:Z"
   register: result
   retries: 3
   delay: 1
