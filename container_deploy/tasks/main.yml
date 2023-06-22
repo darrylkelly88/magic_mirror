@@ -1,0 +1,117 @@
+---
+# tasks file for createmm
+
+- name: create the {{container_user}} user with a UID of {{container_user_UID}}
+  ansible.builtin.user:
+    name: "{{ container_user }}"
+    uid: "{{ container_user_UID }}"
+    password: "{{ container_user_password | password_hash('sha512') }}"
+    shell: /bin/bash
+    createhome: true
+    state: present
+
+- name: create directories {{host_dirs}}
+  ansible.builtin.file:
+    path: "{{item}}"
+    state: directory
+    owner: "{{container_user}}"
+    group: "{{container_user}}"
+    mode: 0744
+  loop: "{{host_dirs}}"
+
+- name: set the selinux contexts of {{ host_dirs }} to container_file_t
+  community.general.sefcontext:
+    target: "{{ item }}"
+    setype: container_file_t
+    state: present
+  loop: "{{host_dirs}}"
+
+- name: run restorecon against "{{ host_dirs }}"
+  ansible.builtin.command: restorecon -R -v "{{ item }}"
+  loop: "{{host_dirs}}"
+
+- name: change the ownership of files using podman unshare
+  command: "podman unshare chown -R {{storage_access_uid}}:{{storage_access_uid}} {{item}}"
+  loop: "{{ host_dirs }}"
+  become: true
+  become_user: "{{container_user}}"
+
+- name: open ports":"" "{{host_ports}}"
+  ansible.posix.firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  loop: "{{ host_ports }}"
+
+- name: reload firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: reloaded
+
+- name: create port mappings
+  set_fact: 
+    port_mappings: "{{volume_mappings | default([]) + [item.0 | string + ':' + item.1 | string + '/tcp']}}"
+  with_together:
+    - "{{host_ports}}"
+    - "{{container_ports}}"
+
+- name: port mappings for host:container are":"
+  debug:
+    msg: "{{port_mappings}}"
+
+- name: create volume mappings
+  set_fact: 
+    volume_mappings: "{{volume_mappings | default([]) + [item.0 + ':' + item.1 + ':Z']}}"
+  with_together:
+    - "{{host_dirs}}"
+    - "{{container_dirs}}"
+
+- name: volume mappings for host:container:option are":"
+  debug:
+    msg: "{{volume_mappings}}"
+
+- name: login to the container registry if required
+  containers.podman.podman_login:
+    registry: "{{container_registry}}"
+    username: "{{registry_username}}"
+    password: "{{registry_password}}"
+  when: registry_login_required ==true
+  become: true
+  become_user: "{{container_user}}"
+
+- name: ensure that the "{{container_image}}" image exists
+  containers.podman.podman_image:
+    name: "{{ container_registry }}/{{ container_image }}"
+    tag: "{{ container_tag }}"
+    pull: true
+    arch: "amd64"
+    force: true
+  become: true
+  become_user: "{{container_user}}"
+
+- name: deploy the "{{ container_image }}"":""{{ container_tag }}" container  using podman
+  containers.podman.podman_container:
+    name: "{{ container_name }}"
+    image: "{{ container_image }}:{{ container_tag }}"
+    state: started
+    publish:
+      - "{{ port_mappings[0] | default('') }}"
+      - "{{ port_mappings[1] | default('') }}"
+      - "{{ port_mappings[2] | default('') }}"
+      - "{{ port_mappings[3] | default('') }}"
+      - "{{ port_mappings[4] | default('') }}"
+    volume:
+      - "{{ volume_mappings[0] | default('') }}"
+      - "{{ volume_mappings[1] | default('') }}"
+      - "{{ volume_mappings[2] | default('') }}"
+      - "{{ volume_mappings[3] | default('') }}"
+      - "{{ volume_mappings[4] | default('') }}"
+    command: "{{ container_entrypoint }}"
+  register: result
+  retries: 3
+  delay: 1
+  until: result is not failed
+  become: true
+  become_user: "{{container_user}}"
+
+
