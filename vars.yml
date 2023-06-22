@@ -11,19 +11,41 @@ container_user: magic_mirror
 container_user_UID: 1500
 
 # Password for the container user
-# edit this value in the ansible-vault file: secrets.yml
-vars_files:
-  - secrets.yml
+# edit the hashed_container_user_password value in the ansible-vault file: secrets.yml
 container_user_password: "{{ hashed_container_user_password }}"
 
 
+###  Container settings ###
+# Name the container will have on host machine
+container_name: magicmirror
+
+# Where the container will pull from
+container_registry: docker.io
+container_image: karsten13/magicmirror
+container_tag: latest
+
+#registry login details
+#if registry login is required to access an image set to yes, else no.
+registry_login_required: yes
+registry_username: darryl14
+#update this value in secrets.yml
+registry_password: "{{hashed_registry_password}}"
+
+
+# container command or entrypoint
+container_entrypoint: npm run server
+
 ### Host:Container Port Settings ###
 # Currently support up to 5 port mappings.
+
+# Host ports - these ports will be opened on the host machine firewall and then mapped to the container ports in the same order they are both listed in
 host_ports:
   - 80
 
+# These are the ports on the container that the host ports will be mapped to. They will be mapped in the same order that they each appear in the list
 container_ports:
  - 8080
+
 
 
 ### Host:Container Volume Mount Settings ###

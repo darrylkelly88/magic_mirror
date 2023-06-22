@@ -3,14 +3,16 @@
 
 - name: quick debug task
   debug:
-    msg: "{{container_user_password}}"
+    msg: "{{ container_registry }}/{{ container_image }}:{{ container_tag }}"
 
 - name: create the {{container_user}} user with a UID of {{container_user_UID}}
   ansible.builtin.user:
     name: "{{container_user}}"
     uid: "{{ container_user_UID }}"
-    system: true
-    createhome: false
+    password: "{{ container_user_password | password_hash('sha512')}}"
+    shell: /bin/bash
+    createhome: true
+    password_lock: yes
     state: present
 
 - name: create directories {{host_dirs}}
@@ -29,7 +31,7 @@
     state: present
   loop: "{{host_dirs}}"
 
-- name: run restorecon against mm_dirs
+- name: run restorecon against "{{ host_dirs }}"
   ansible.builtin.command: restorecon -R -v "{{ item }}"
   loop: "{{host_dirs}}"
 
@@ -42,7 +44,7 @@
 
 - name: create port mappings
   set_fact: 
-    port_mappings: "{{volume_mappings | default([]) + [item.0 + ':' + item.1 + '/tcp']}}"
+    port_mappings: "{{volume_mappings | default([]) + [item.0 | string + ':' + item.1 | string + '/tcp']}}"
   with_together:
     - "{{host_ports}}"
     - "{{container_ports}}"
@@ -61,28 +63,3 @@
 - name: volume mappings for host:container:option are":"
   debug:
     msg: "{{volume_mappings}}"
-
-- name: deploy the karsten13/magicmirror container  using podman
-  containers.podman.podman_container:
-    name: magicmirror
-    image: karsten13/magicmirror:latest
-    state: started
-    publish:
-      - "{{ port_mappings[0] | default('') }}"
-      - "{{ port_mappings[1] | default('') }}"
-      - "{{ port_mappings[2] | default('') }}"
-      - "{{ port_mappings[3] | default('') }}"
-      - "{{ port_mappings[4] | default('') }}"
-    volume:
-      - "{{ volume_mappings[0] | default('') }}"
-      - "{{ volume_mappings[1] | default('') }}"
-      - "{{ volume_mappings[2] | default('') }}"
-      - "{{ volume_mappings[3] | default('') }}"
-      - "{{ volume_mappings[4] | default('') }}"
-  register: result
-  retries: 3
-  delay: 1
-  until: result is not failed
-
-
-#- name: use podman to deploy the container
