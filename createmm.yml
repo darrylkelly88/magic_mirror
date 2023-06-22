@@ -3,5 +3,7 @@
   hosts: all
   gather_facts: false
   become: yes
+  vars_files:
+    - vars.yml
   roles:
     - createmm

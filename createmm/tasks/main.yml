@@ -1,43 +1,50 @@
 ---
 # tasks file for createmm
 
-- name: debug task
-  ansible.builtin.debug:
-    msg: "{{mm_dirs}}:{{mm_container_dirs}}:Z"
-
-- name: create the magic_mirror user with a UID of {{mm_UID}}
+- name: create the {{container_user}} user with a UID of {{container_user_UID}}
   ansible.builtin.user:
-    name: magic_mirror
-    uid: "{{ mm_UID }}"
+    name: "{{container_user}}"
+    uid: "{{ container_user_UID }}"
     system: true
     createhome: false
     state: present
 
-- name: create directories {{mm_dirs}}
+- name: create directories {{host_dirs}}
   ansible.builtin.file:
     path: "{{item}}"
     state: directory
-    owner: magic_mirror
-    group: magic_mirror
+    owner: "{{container_user}}"
+    group: "{{container_user}}"
     mode: 0644
-  loop: "{{mm_dirs}}"
+  loop: "{{host_dirs}}"
 
-- name: set the selinux contexts of mm_dirs to container_file_t
+- name: set the selinux contexts of host_dirs to container_file_t
   community.general.sefcontext:
     target: "{{ item }}"
     setype: container_file_t
     state: present
-  loop: "{{mm_dirs}}"
+  loop: "{{host_dirs}}"
 
 - name: run restorecon against mm_dirs
   ansible.builtin.command: restorecon -R -v "{{ item }}"
-  loop: "{{mm_dirs}}"
+  loop: "{{host_dirs}}"
 
 - name: open port 80
   ansible.posix.firewalld:
     port: 80/tcp
     permanent: true
     state: enabled
+
+- name: create volume mappings
+  set_fact: 
+    volume_mappings: "{{volume_mappings | default([]) + [item.0 + ':' + item.1 + ':Z']}}"
+  with_together:
+    - "{{mm_dirs}}"
+    - "{{mm_container_dirs}}"
+
+- name: volume mappings for host:container:option are":"
+  debug:
+    msg: "{{volume_mappings}}"
 
 - name: deploy the karsten13/magicmirror container  using podman
   containers.podman.podman_container:
@@ -47,7 +54,9 @@
     publish:
       - 80:8080/tcp
     volume:
-      - "{{ mm_dirs }}:{{ mm_container_dirs }}:Z"
+      - "{{volume_mappings[0]}}"
+      - "{{volume_mappings[1]}}"
+      - "{{volume_mappings[2]}}"
   register: result
   retries: 3
   delay: 1
