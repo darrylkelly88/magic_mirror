@@ -1,6 +1,33 @@
 ---
 
+
+
+### Containter User Settings ###
+
+# Username of the user that will run the container on the host
+container_user: magic_mirror
+
+# UID of the host user that will run the container
+container_user_UID: 1500
+
+# Password for the container user
+# edit this value in the ansible-vault file: secrets.yml
+vars_files:
+  - secrets.yml
+container_user_password: "{{ hashed_container_user_password }}"
+
+
+### Host:Container Port Settings ###
+# Currently support up to 5 port mappings.
+host_ports:
+  - 80
+
+container_ports:
+ - 8080
+
+
 ### Host:Container Volume Mount Settings ###
+# Currently support up to 5 volume mappings.
 
 # These will be mapped to the container_dirs in the same order they are both listed for mounting to the container
 host_dirs:
@@ -16,13 +43,7 @@ container_dirs:
 
 
 
-### Containter User Settings ###
 
-# Username of the user that will run the container on the host
-container_user: magic_mirror
-
-# UID of the host user that will run the container
-container_user_UID: 1500
 
 
 

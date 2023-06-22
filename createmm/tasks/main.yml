@@ -1,6 +1,10 @@
 ---
 # tasks file for createmm
 
+- name: quick debug task
+  debug:
+    msg: "{{container_user_password}}"
+
 - name: create the {{container_user}} user with a UID of {{container_user_UID}}
   ansible.builtin.user:
     name: "{{container_user}}"
@@ -18,7 +22,7 @@
     mode: 0644
   loop: "{{host_dirs}}"
 
-- name: set the selinux contexts of host_dirs to container_file_t
+- name: set the selinux contexts of {{ host_dirs }} to container_file_t
   community.general.sefcontext:
     target: "{{ item }}"
     setype: container_file_t
@@ -29,18 +33,30 @@
   ansible.builtin.command: restorecon -R -v "{{ item }}"
   loop: "{{host_dirs}}"
 
-- name: open port 80
+- name: open ports":"" "{{host_ports}}"
   ansible.posix.firewalld:
-    port: 80/tcp
+    port: "{{ item }}/tcp"
     permanent: true
     state: enabled
+  loop: "{{ host_ports }}"
+
+- name: create port mappings
+  set_fact: 
+    port_mappings: "{{volume_mappings | default([]) + [item.0 + ':' + item.1 + '/tcp']}}"
+  with_together:
+    - "{{host_ports}}"
+    - "{{container_ports}}"
+
+- name: port mappings for host:container are":"
+  debug:
+    msg: "{{port_mappings}}"
 
 - name: create volume mappings
   set_fact: 
     volume_mappings: "{{volume_mappings | default([]) + [item.0 + ':' + item.1 + ':Z']}}"
   with_together:
-    - "{{mm_dirs}}"
-    - "{{mm_container_dirs}}"
+    - "{{host_dirs}}"
+    - "{{container_dirs}}"
 
 - name: volume mappings for host:container:option are":"
   debug:
@@ -52,11 +68,17 @@
     image: karsten13/magicmirror:latest
     state: started
     publish:
-      - 80:8080/tcp
+      - "{{ port_mappings[0] | default('') }}"
+      - "{{ port_mappings[1] | default('') }}"
+      - "{{ port_mappings[2] | default('') }}"
+      - "{{ port_mappings[3] | default('') }}"
+      - "{{ port_mappings[4] | default('') }}"
     volume:
-      - "{{volume_mappings[0]}}"
-      - "{{volume_mappings[1]}}"
-      - "{{volume_mappings[2]}}"
+      - "{{ volume_mappings[0] | default('') }}"
+      - "{{ volume_mappings[1] | default('') }}"
+      - "{{ volume_mappings[2] | default('') }}"
+      - "{{ volume_mappings[3] | default('') }}"
+      - "{{ volume_mappings[4] | default('') }}"
   register: result
   retries: 3
   delay: 1
