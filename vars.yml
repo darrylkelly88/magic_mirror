@@ -25,8 +25,8 @@ container_image: karsten13/magicmirror
 container_tag: latest
 
 #registry login details
-#if registry login is required to access an image set to yes, else no.
-registry_login_required: yes
+#if registry login is required to access an image set to true, else false.
+registry_login_required: true
 registry_username: darryl14
 #update this value in secrets.yml
 registry_password: "{{hashed_registry_password}}"
@@ -40,7 +40,7 @@ container_entrypoint: npm run server
 
 # Host ports - these ports will be opened on the host machine firewall and then mapped to the container ports in the same order they are both listed in
 host_ports:
-  - 80
+  - 8080
 
 # These are the ports on the container that the host ports will be mapped to. They will be mapped in the same order that they each appear in the list
 container_ports:
@@ -59,11 +59,12 @@ host_dirs:
 
 # These will be mapped to the host_dirs in the same order they are both listed for mounting to the container
 container_dirs:
-  - /opt/magicmirror/config
-  - /opt/magicmirror/modules
-  - /opt/magicmirror/css
+  - /opt/magic_mirror/config
+  - /opt/magic_mirror/modules
+  - /opt/magic_mirror/css
 
-
+# UID of user within container that needs access to directories
+storage_access_uid: 1
 
 
 
