@@ -120,15 +120,6 @@
   become: true
   become_user: "{{container_user}}"
 
-# - name: copy systemd file to /etc/systemd/user
-#   ansible.builtin.copy:
-#     src: "/home/{{container_user}}/.config/systemd/user/container-{{container_name}}.service"
-#     dest: "/etc/systemd/user/container-{{container_name}}.service"
-#     remote_src: yes
-#     owner: root
-#     group: root
-#     mode: "0755"
-
 - name: start and enable the container using systemd
   ansible.builtin.systemd:
     name: "container-{{container_name}}"
