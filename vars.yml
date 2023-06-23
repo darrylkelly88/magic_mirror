@@ -24,7 +24,8 @@ container_registry: docker.io
 container_image: karsten13/magicmirror
 container_tag: latest
 
-#registry login details
+### Registry login details ###
+
 #if registry login is required to access an image set to true, else false.
 registry_login_required: true
 registry_username: darryl14
