@@ -30,6 +30,9 @@
   ansible.builtin.command: restorecon -R -v "{{ item }}"
   loop: "{{host_dirs}}"
 
+- name: enable linger for the user "{{ container_user }}"
+  command: "loginctl enable-linger {{container_user_UID}}"
+
 - name: change the ownership of files using podman unshare
   command: "podman unshare chown -R {{storage_access_uid}}:{{storage_access_uid}} {{item}}"
   loop: "{{ host_dirs }}"
@@ -89,11 +92,11 @@
   become: true
   become_user: "{{container_user}}"
 
-- name: deploy the "{{ container_image }}"":""{{ container_tag }}" container  using podman
+- name: deploy the "{{ container_image }}"':'"{{ container_tag }}" container  using podman in a stopped state
   containers.podman.podman_container:
     name: "{{ container_name }}"
     image: "{{ container_image }}:{{ container_tag }}"
-    state: started
+    state: stopped
     publish:
       - "{{ port_mappings[0] | default('') }}"
       - "{{ port_mappings[1] | default('') }}"
@@ -107,11 +110,32 @@
       - "{{ volume_mappings[3] | default('') }}"
       - "{{ volume_mappings[4] | default('') }}"
     command: "{{ container_entrypoint }}"
-  register: result
-  retries: 3
-  delay: 1
-  until: result is not failed
   become: true
   become_user: "{{container_user}}"
 
+- name: generate a systemd unit file for the container
+  containers.podman.podman_generate_systemd:
+    name: "{{container_name}}"
+    dest: ~/.config/systemd/user
+  become: true
+  become_user: "{{container_user}}"
+
+# - name: copy systemd file to /etc/systemd/user
+#   ansible.builtin.copy:
+#     src: "/home/{{container_user}}/.config/systemd/user/container-{{container_name}}.service"
+#     dest: "/etc/systemd/user/container-{{container_name}}.service"
+#     remote_src: yes
+#     owner: root
+#     group: root
+#     mode: "0755"
+
+- name: start and enable the container using systemd
+  ansible.builtin.systemd:
+    name: "container-{{container_name}}"
+    state: started
+    enabled: true
+    daemon_reload: yes
+    scope: user
+  become: true
+  become_user: "{{container_user}}"
 
