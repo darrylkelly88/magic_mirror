@@ -19,6 +19,14 @@
     mode: 0744
   loop: "{{host_dirs}}"
 
+- name: ensure recursive ownership of directory is set in case it already exists
+  ansible.builtin.file:
+    path: "{{item}}"
+    owner: "{{container_user}}"
+    group: "{{container_user}}"
+    recurse: yes
+  loop: "{{host_dirs}}"
+
 - name: set the selinux contexts of {{ host_dirs }} to container_file_t
   community.general.sefcontext:
     target: "{{ item }}"
@@ -110,6 +118,9 @@
       - "{{ volume_mappings[3] | default('') }}"
       - "{{ volume_mappings[4] | default('') }}"
     command: "{{ container_entrypoint }}"
+#    cap_add:
+#      - net_admin
+#      - net_raw
   become: true
   become_user: "{{container_user}}"
 
