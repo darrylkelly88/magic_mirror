@@ -1,0 +1,73 @@
+---
+
+
+
+### Containter User Settings ###
+
+# Username of the user that will run the container on the host
+container_user: logstash
+
+# UID of the host user that will run the container
+container_user_UID: 1510
+
+# Password for the container user
+# edit the hashed_container_user_password value in the ansible-vault file: secrets.yml
+container_user_password: "{{ hashed_container_user_password }}"
+
+
+###  Container settings ###
+# Name the container will have on host machine
+container_name: logstash
+
+# Where the container will pull from
+container_registry: docker.io
+container_image: logstash
+container_tag: 8.8.1
+
+### Registry login details ###
+
+#if registry login is required to access an image set to true, else false.
+registry_login_required: true
+registry_username: darryl14
+#update this value in secrets.yml
+registry_password: "{{hashed_registry_password}}"
+
+
+# container command or entrypoint
+container_entrypoint: /bin/sh
+
+### Host:Container Port Settings ###
+# Currently support up to 5 port mappings.
+
+# Host ports - these ports will be opened on the host machine firewall and then mapped to the container ports in the same order they are both listed in
+host_ports:
+  - 5044
+  - 9600
+
+# These are the ports on the container that the host ports will be mapped to. They will be mapped in the same order that they each appear in the list
+container_ports:
+ - 5044
+ - 9600
+
+
+
+### Host:Container Volume Mount Settings ###
+# Currently support up to 5 volume mappings.
+
+# These will be mapped to the container_dirs in the same order they are both listed for mounting to the container
+host_dirs:
+  - /etc/logstash/pipeline
+  - /etc/logstash/config
+
+# These will be mapped to the host_dirs in the same order they are both listed for mounting to the container
+container_dirs:
+  - /usr/share/logstash/pipeline
+  - /usr/share/logstash/config
+
+# UID of user within container that needs access to directories
+storage_access_uid: 1000
+
+
+
+
+

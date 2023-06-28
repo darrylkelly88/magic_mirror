@@ -117,7 +117,7 @@
       - "{{ volume_mappings[2] | default('') }}"
       - "{{ volume_mappings[3] | default('') }}"
       - "{{ volume_mappings[4] | default('') }}"
-    command: "{{ container_entrypoint }}"
+#    command: "{{ container_entrypoint }}"
 #    cap_add:
 #      - net_admin
 #      - net_raw
@@ -141,3 +141,7 @@
   become: true
   become_user: "{{container_user}}"
 
+- name: write stdout to file.
+  ansible.builtin.copy:
+    content: "{{job_result.stdout}}"
+    dest: /root/stdout.txt

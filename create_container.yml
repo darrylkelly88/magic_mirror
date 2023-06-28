@@ -4,7 +4,7 @@
   gather_facts: false
   become: yes
   vars_files:
-    - vars.yml
+    - logstash_vars.yml
     - secrets.yml
   roles:
     - container_deploy
