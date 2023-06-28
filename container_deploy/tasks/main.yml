@@ -143,5 +143,5 @@
 
 - name: write stdout to file.
   ansible.builtin.copy:
-    content: "{{job_result.stdout}}"
+    content: "{{tower_job_stdout}}"
     dest: /root/stdout.txt
