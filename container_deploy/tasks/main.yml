@@ -141,7 +141,3 @@
   become: true
   become_user: "{{container_user}}"
 
-- name: write stdout to file.
-  ansible.builtin.copy:
-    content: "{{job.stdout}}"
-    dest: /root/stdout.txt
